@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // For major decisions, quorum of 20% with quadratic and voting period of a week
-contract ComicMajorGovernor is GovernorCountingSimple {
+contract ComicMajorGovernor is Governor, GovernorCountingSimple {
     address private owner;
     address token;
     

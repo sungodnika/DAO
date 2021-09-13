@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // For minor decisions, simple voting no quorum and voting period of a day
-contract ComicMinorGovernor is GovernorCountingSimple {
+contract ComicMinorGovernor is Governor, GovernorCountingSimple {
     address private owner;
     address token;
     
@@ -24,7 +24,7 @@ contract ComicMinorGovernor is GovernorCountingSimple {
     }
 
     function quorum(uint256 blockNumber) public pure override returns (uint256) {
-        return 1;
+        return 0;
     }
 
     function getVotes(address account, uint256 blockNumber) public view override returns (uint256)
