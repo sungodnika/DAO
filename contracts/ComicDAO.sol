@@ -29,6 +29,12 @@ contract ComicDAO is ComicICO {
         minorGovernor = new ComicMinorGovernor(address(cmcToken));
     }
 
+    // events
+    event ProposedSketch(string sketchlink, address writer, uint pageNumber);
+    event ProposedDrawing(string drawlink, string sketchlink, address artist, uint pageNumber);
+    event ApprovedSketch(string sketchlink, address writer, uint pageNumber);
+    event ApprovedDrawing(string drawlink, string sketchlink, address artist, uint pageNumber);
+
     modifier onlyMajorGovernor() {
         require(msg.sender == address(majorGovernor), "Needs to be the major governor");
         _;
@@ -69,6 +75,7 @@ contract ComicDAO is ComicICO {
         require(!approvedSketches[sketchLink], "sketch is already approved");
         sketchesToWriter[sketchLink] = msg.sender;
         approvedSketches[sketchLink] = false;
+        emit ProposedSketch(sketchLink, msg.sender, getPageNumber());
     }
 
     function proposeDrawings(string calldata sketchLink, string calldata drawingLink) external {
@@ -76,30 +83,26 @@ contract ComicDAO is ComicICO {
         require(drawingsToArtist[drawingLink] == address(0), "drawing already submitted");
         require(artists[msg.sender], "Only approved artists can submit page sketches");
         require(approvedSketches[sketchLink], "Only approved sketches can have drawings");
-        require(compareStrings(drawingsToSketches[drawingLink],""), "sketch already has a drawing linked");
         drawingsToSketches[drawingLink] = sketchLink;
         drawingsToArtist[drawingLink] = msg.sender;
+        emit ProposedDrawing(drawingLink, sketchLink, msg.sender, getPageNumber());
     }
 
     // page sketches can only be approved by a major governor, payment decided by the governor
-    function approveRejectPageSketches(string calldata sketchLink, uint payment, bool approve) external onlyMajorGovernor {
+    function approvePageSketches(string calldata sketchLink, uint payment) external onlyMajorGovernor {
         require(!approvedSketches[sketchLink], "Sketch is already approved");
-        approvedSketches[sketchLink] = approve;
-        if(approve) {
-            pendingPayments[sketchesToWriter[sketchLink]] += payment;
-        }
+        approvedSketches[sketchLink] = true;
+        pendingPayments[sketchesToWriter[sketchLink]] += payment;
+        emit ApprovedSketch(sketchLink, msg.sender, getPageNumber());
     }
 
     // drawings can only be approved by a major governor, payment decided by the governor
-    function approveDrawings(string calldata sketchLink, string calldata drawingLink, uint payment, bool approve) external onlyMajorGovernor {
+    function approveDrawings(string calldata sketchLink, string calldata drawingLink, uint payment) external onlyMajorGovernor {
         require(approvedSketches[sketchLink], "Sketch should already be approved");
         require(compareStrings(drawingsToSketches[drawingLink], sketchLink), "drawingLink is not for the sketch");
-        if (approve){
-            pendingPayments[drawingsToArtist[drawingLink]] += payment;
-            approvedComics.push(drawingLink);
-        } else {
-            drawingsToSketches[drawingLink] = "";
-        }
+        pendingPayments[drawingsToArtist[drawingLink]] += payment;
+        approvedComics.push(drawingLink);
+        emit ApprovedDrawing(drawingLink, sketchLink, msg.sender, getPageNumber());
     }
 
     function claimPayment() external {
@@ -113,6 +116,10 @@ contract ComicDAO is ComicICO {
 
     function compareStrings(string memory a, string memory b) public pure returns (bool) {
         return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
+    }
+
+    function getPageNumber() public view returns (uint) {
+        return approvedComics.length + 1;
     }
 
 }
