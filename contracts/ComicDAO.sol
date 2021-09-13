@@ -54,32 +54,18 @@ contract ComicDAO is ComicICO {
         artists[_artist] = true;
     }
 
-    function toGeneralPhase() external onlyMajorGovernor {
-        toGeneral();
-    }
-
-    function toOpenPhase() external onlyMajorGovernor {
-        toOpen();
-    }
-    function addRemovePrivateInvestor(address privateInvestor, bool action) external onlyMajorGovernor {
-        _addRemovePrivateInvestor(privateInvestor, action);
-    }
     function withdraw(address _to, uint amount) external onlyMajorGovernor returns(bool) {
         return _withdraw(_to, amount);
     }
 
     function proposePageSketches(string calldata sketchLink) external {
-        require(msg.sender != address(0));
         require(sketchesToWriter[sketchLink] == address(0), "sketch already submitted");
-        require(writers[msg.sender], "Only approved writers can submit page sketches");
-        require(!approvedSketches[sketchLink], "sketch is already approved");
+        require(writers[msg.sender] || cmcToken.balanceOf(msg.sender)>0, "Only approved writers or community members can submit page sketches");
         sketchesToWriter[sketchLink] = msg.sender;
-        approvedSketches[sketchLink] = false;
         emit ProposedSketch(sketchLink, msg.sender, getPageNumber());
     }
 
     function proposeDrawings(string calldata sketchLink, string calldata drawingLink) external {
-        require(msg.sender != address(0));
         require(drawingsToArtist[drawingLink] == address(0), "drawing already submitted");
         require(artists[msg.sender], "Only approved artists can submit page sketches");
         require(approvedSketches[sketchLink], "Only approved sketches can have drawings");
@@ -120,6 +106,13 @@ contract ComicDAO is ComicICO {
 
     function getPageNumber() public view returns (uint) {
         return approvedComics.length + 1;
+    }
+
+    function getMajorGovernor() public view returns (IGovernor) {
+        return majorGovernor;
+    }
+    function getMinorGovernor() public view returns (IGovernor) {
+        return minorGovernor;
     }
 
 }
